@@ -64,7 +64,8 @@ export async function maybeCreateDynamicAgent(params: {
     }
   }
 
-  const agentId = `wecom-${peerId}`;
+  // agentId 使用 peerKind 区分，目录结构按 wecom/{kind}/{peerId} 组织
+  const agentId = `wecom-${peerKind}-${peerId}`;
 
   // agent 已存在但缺少 binding，只补 binding
   const existingAgent = (cfg.agents?.list ?? []).find((a) => a.id === agentId);
@@ -84,17 +85,24 @@ export async function maybeCreateDynamicAgent(params: {
     return { created: true, updatedCfg, agentId };
   }
 
-  // 解析路径模板（支持 {peerId} 和 {agentId} 占位符）
+  // 解析路径模板（支持 {peerId} / {peerKind} / {agentId} 占位符）
+  // 默认目录结构：~/.openclaw/agents/wecom/{peerKind}/{peerId}/
   const workspaceTemplate =
-    dynamicCfg.workspaceTemplate ?? "~/.openclaw/agents/wecom-{peerId}/workspace";
+    dynamicCfg.workspaceTemplate ?? "~/.openclaw/agents/wecom/{peerKind}/{peerId}/workspace";
   const agentDirTemplate =
-    dynamicCfg.agentDirTemplate ?? "~/.openclaw/agents/wecom-{peerId}/agent";
+    dynamicCfg.agentDirTemplate ?? "~/.openclaw/agents/wecom/{peerKind}/{peerId}/agent";
 
   const workspace = resolveUserPath(
-    workspaceTemplate.replace(/\{peerId\}/g, peerId).replace(/\{agentId\}/g, agentId),
+    workspaceTemplate
+      .replace(/\{peerKind\}/g, peerKind)
+      .replace(/\{peerId\}/g, peerId)
+      .replace(/\{agentId\}/g, agentId),
   );
   const agentDir = resolveUserPath(
-    agentDirTemplate.replace(/\{peerId\}/g, peerId).replace(/\{agentId\}/g, agentId),
+    agentDirTemplate
+      .replace(/\{peerKind\}/g, peerKind)
+      .replace(/\{peerId\}/g, peerId)
+      .replace(/\{agentId\}/g, agentId),
   );
 
   log(`[WeCom] dynamicAgent: creating agent "${agentId}" for peer ${peerId}`);
